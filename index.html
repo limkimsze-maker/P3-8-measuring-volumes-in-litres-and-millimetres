@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Water Polo Capacity Challenge</title>
+<style>
+:root{
+  --blue:#157dc0;
+  --deep:#0c5888;
+  --sky:#eef9ff;
+  --ink:#22384d;
+  --good:#179251;
+  --bad:#cb4a4a;
+  --p1:#438fe8;
+  --p2:#e85b57;
+}
+*{box-sizing:border-box}
+html,body{
+  margin:0;height:100%;overflow:hidden;
+  font-family:"Trebuchet MS","Arial Rounded MT Bold",Arial,sans-serif;
+  background:linear-gradient(#eef9ff,#fff);
+  color:var(--ink)
+}
+body{padding:8px}
+button,input{font:inherit}
+button{cursor:pointer;touch-action:manipulation}
+.app{
+  max-width:1360px;height:calc(100vh - 16px);margin:auto;
+  border:2px solid #cfe6f8;border-radius:26px;background:#fff;
+  overflow:hidden;display:flex;flex-direction:column;
+  box-shadow:0 12px 36px #3e84b71c
+}
+header{
+  flex:0 0 auto;background:var(--blue);color:#fff;padding:10px 16px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px
+}
+header h1{margin:0;font-size:clamp(22px,2.8vw,38px)}
+header .sub{text-align:right;font-size:12px;line-height:1.25}
+main{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column}
+.screen{display:none;height:100%;min-height:0}
+.screen.active{display:flex}
+.card{
+  border:2px solid #d8ecf9;border-radius:22px;background:#fff;
+  box-shadow:0 6px 18px #4d8fb512
+}
+.hidden{display:none!important}
+
+/* home */
+#home{align-items:stretch}
+.homeGrid{flex:1;min-height:0;display:grid;grid-template-columns:1.05fr .95fr;gap:10px}
+.intro,.preview{padding:18px;overflow:hidden}
+.intro h2{margin:0;color:var(--deep);font-size:clamp(30px,4.4vw,54px);line-height:1.02}
+.intro p{font-size:clamp(15px,1.7vw,22px);line-height:1.42;margin:10px 0}
+.modeRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.modeBtn{
+  border:0;border-radius:18px;color:#fff;padding:18px 10px;
+  font-size:clamp(20px,2.2vw,28px);font-weight:900;box-shadow:0 6px 0 #0002
+}
+.modeBtn.one{background:var(--p1)}
+.modeBtn.two{background:linear-gradient(90deg,var(--p1) 50%,var(--p2) 50%)}
+.modeBtn:active{transform:translateY(3px);box-shadow:0 3px 0 #0002}
+.diffWrap{margin-top:16px}
+.diffTitle{font-weight:900;color:var(--deep);font-size:clamp(16px,1.8vw,22px);margin-bottom:8px}
+.diffRow{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.diffBtn{
+  border:2px solid #b9daf2;background:#fff;color:#1467a6;
+  border-radius:16px;padding:10px 8px;font-weight:900;font-size:clamp(15px,1.6vw,19px)
+}
+.diffBtn.active{background:#eaf6ff;border-color:#2889ce;box-shadow:0 0 0 3px #d8efff inset}
+.diffHint{font-size:12px;color:#6b7f90;line-height:1.35;margin-top:8px}
+.preview{background:linear-gradient(150deg,#fff,#eef9ff)}
+.preview h3{margin:0 0 8px;color:var(--deep);font-size:clamp(22px,2.4vw,30px)}
+.preview ul{font-size:clamp(14px,1.5vw,18px);line-height:1.5;margin:0 0 8px 20px;padding:0}
+.previewArt{
+  height:210px;border:2px solid #d7ecfa;border-radius:18px;background:#f8fdff;
+  display:flex;align-items:center;justify-content:center;overflow:hidden
+}
+.note{font-size:12px;color:#6b7f90;text-align:center;margin-top:8px;line-height:1.3}
+
+/* game */
+#game{flex-direction:column;gap:7px}
+.controls{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.btnRow{display:flex;gap:8px;flex-wrap:wrap}
+.smallbtn{
+  border:0;background:#eaf6ff;color:#075f9f;border-radius:11px;padding:8px 12px;
+  font-weight:900;font-size:14px
+}
+.statusline{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;align-items:center}
+.score{padding:8px 12px;border:2px solid #dceeff;border-radius:13px;background:#fff;font-weight:900}
+.score.p1{border-color:#b8d6ff}.score.p2{border-color:#ffc1bf;text-align:right}
+.round{font-weight:900;color:#5f7485;text-align:center}
+.progress{height:8px;background:#e9f3f9;border-radius:999px;overflow:hidden}
+.progress div{height:100%;background:var(--blue);width:0;transition:.25s}
+.gameGrid{
+  flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,1.18fr) minmax(360px,.82fr);
+  gap:8px
+}
+.questionCard,.poloCard{
+  min-height:0;padding:10px;display:flex;flex-direction:column;overflow:hidden
+}
+.badges{display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:6px 12px;border-radius:999px;font-weight:900;background:#eaf7ff;color:#0767aa}
+.turn.p1{background:#edf5ff;color:#3372bc;border:2px solid #bfd8ff}
+.turn.p2{background:#fff0ef;color:#b9413d;border:2px solid #ffc3c0}
+#question{
+  text-align:center;font-weight:900;font-size:clamp(20px,2.3vw,32px);line-height:1.15;
+  margin:8px 0
+}
+.helper{
+  align-self:center;background:#f1ebff;border:2px solid #cfbdf0;color:#58438c;
+  border-radius:16px;padding:6px 14px;font-size:13px;font-weight:900;line-height:1.3;max-width:96%;text-align:center
+}
+.measureWrap{
+  flex:1;min-height:0;border:2px solid #d9edfa;border-radius:18px;background:#fbfeff;
+  display:flex;align-items:center;justify-content:center;padding:8px;overflow:auto
+}
+.scene{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.answerArea{margin-top:8px}
+.answerLabel{text-align:center;color:#6a7b8a;font-weight:900;font-size:13px}
+.answerWrap{
+  display:flex;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;
+  font-size:clamp(20px,2.4vw,28px);font-weight:900
+}
+.answerInput{
+  width:120px;height:50px;border:3px solid #b6d8f0;border-radius:14px;background:#fff;
+  text-align:center;font-weight:900;font-size:clamp(20px,2.3vw,28px);color:var(--ink)
+}
+.answerInput.correct{border-color:var(--good);background:#edf9f2;color:#08743a}
+.answerInput.wrong{border-color:var(--bad);background:#fff1f1;color:#b33030}
+.actions{display:flex;justify-content:center;gap:10px;margin-top:8px}
+.action{
+  border:0;border-radius:13px;padding:9px 18px;background:var(--blue);color:#fff;
+  font-weight:900;font-size:18px
+}
+.action.alt{background:#6d80a6}
+.feedback{text-align:center;min-height:26px;font-weight:900;font-size:18px;margin-top:6px}
+.explain{text-align:center;min-height:32px;color:#637486;font-size:14px;line-height:1.35}
+
+/* water polo */
+.poloTitle{
+  align-self:center;font-weight:900;font-size:clamp(18px,2vw,24px);
+  padding:6px 12px;border-radius:999px;background:#eaf7ff;color:#0c5c92
+}
+.poloStage{
+  flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  border-radius:18px;overflow:hidden;background:#e8f8ff;margin-top:8px
+}
+.poloSvg{width:100%;height:100%}
+.poloNote{text-align:center;font-weight:900;font-size:18px;min-height:26px;margin-top:6px;color:#5a6c7a}
+
+/* result */
+#results{align-items:center;justify-content:center}
+.results{width:min(680px,100%);padding:28px;text-align:center}
+.trophy{font-size:72px}
+.results h2{margin:0 0 10px;color:var(--deep);font-size:clamp(30px,4vw,50px)}
+.results p{font-size:clamp(18px,2vw,23px);line-height:1.45}
+.bigbtn{border:0;border-radius:14px;padding:12px 20px;margin:5px;background:var(--blue);color:#fff;font-size:19px;font-weight:900}
+.gold{background:#d99b16}
+
+@media(max-width:1020px){
+  .homeGrid{grid-template-columns:1fr}
+  .preview{display:none}
+  .gameGrid{grid-template-columns:1fr;grid-template-rows:minmax(0,1.16fr) minmax(220px,.84fr)}
+}
+@media(max-width:700px){
+  body{padding:0}.app{height:100vh;border-radius:0}
+  header{padding:8px 10px}
+  main{padding:8px}
+  .answerInput{width:92px;height:42px}
+}
+@media(max-height:760px){
+  .questionCard,.poloCard{padding:8px}
+  #question{font-size:18px;margin:6px 0}
+  .helper{font-size:12px;padding:5px 10px}
+  .feedback{font-size:16px}
+  .explain{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+  <h1>🤽 Water Polo Capacity Challenge</h1>
+  <div class="sub">Total volume and capacity • l and ml<br>1 Player or 2 Players • 2 Levels</div>
+</header>
+
+<main>
+<section id="home" class="screen active">
+  <div class="homeGrid">
+    <div class="card intro">
+      <h2>Add the Beakers. Score the Goal!</h2>
+      <p>Find the <b>total volume</b> or <b>capacity</b> shown by the beakers. Answer in <b>litres and millilitres</b>. Then score in the water polo pool!</p>
+      <div class="modeRow">
+        <button class="modeBtn one" onclick="startGame(1)">👤 1 Player</button>
+        <button class="modeBtn two" onclick="startGame(2)">👥 2 Players</button>
+      </div>
+
+      <div class="diffWrap">
+        <div class="diffTitle">Choose difficulty</div>
+        <div class="diffRow" style="grid-template-columns:1fr 1fr;">
+          <button id="diffEasy" class="diffBtn active" onclick="setDifficulty('easy')">Easy</button>
+          <button id="diffIntermediate" class="diffBtn" onclick="setDifficulty('intermediate')">Intermediate</button>
+        </div>
+        <div class="diffHint">
+          <b>Easy</b>: 2 beakers and very simple mental addition.<br>
+          <b>Intermediate</b>: 3 beakers with clear readings.<br>
+          The challenge is adding the volumes, not decoding difficult scales.
+        </div>
+      </div>
+
+      <div class="note">
+        Correct answer → current player scores a water polo goal.<br>
+        Wrong answer → splash in the pool.
+      </div>
+    </div>
+
+    <div class="card preview">
+      <h3>Question types</h3>
+      <ul>
+        <li>Find the total volume of water in a set of beakers</li>
+        <li>Find the capacity of a container using several beakers</li>
+        <li>Convert the total into <b>l</b> and <b>ml</b></li>
+        <li>Use 1000 ml = 1 l</li>
+      </ul>
+      <div class="previewArt" id="previewArt"></div>
+    </div>
+  </div>
+</section>
+
+<section id="game" class="screen">
+  <div class="controls">
+    <div class="btnRow">
+      <button class="smallbtn" onclick="goHome()">← Home</button>
+      <button class="smallbtn" onclick="restart()">↻ New Game</button>
+      <button class="smallbtn" id="difficultyDisplay" onclick="goHome()">★ Easy</button>
+    </div>
+    <button class="smallbtn" id="soundBtn" onclick="toggleSound()">🔊 Sound On</button>
+  </div>
+
+  <div class="statusline">
+    <div class="score p1" id="score1">Player 1: 0</div>
+    <div class="round" id="round">1 / 12</div>
+    <div class="score p2" id="score2">Player 2: 0</div>
+  </div>
+  <div class="progress"><div id="bar"></div></div>
+
+  <div class="gameGrid">
+    <div class="card questionCard">
+      <div class="badges">
+        <div class="badge" id="typeBadge">Total volume</div>
+        <div class="badge" id="levelBadge">Easy</div>
+        <div class="badge turn p1" id="turnBanner">👤 Your Turn</div>
+      </div>
+
+      <div id="question">Find the total volume of water.</div>
+      <div class="helper" id="helperText">Add the volumes in ml first. Then change 1000 ml to 1 l.</div>
+
+      <div class="measureWrap">
+        <div class="scene" id="scene"></div>
+      </div>
+
+      <div class="answerArea">
+        <div class="answerWrap">
+          <input id="litreInput" class="answerInput" inputmode="numeric" autocomplete="off">
+          <span>l</span>
+          <input id="mlInput" class="answerInput" inputmode="numeric" autocomplete="off">
+          <span>ml</span>
+        </div>
+        <div class="answerLabel">If there are no litres or no millilitres, you may type 0.</div>
+      </div>
+
+      <div class="actions">
+        <button id="checkBtn" class="action" onclick="checkAnswer()">Check Answer</button>
+        <button id="nextBtn" class="action alt hidden" onclick="nextQuestion()">Next →</button>
+      </div>
+
+      <div class="feedback" id="feedback"></div>
+      <div class="explain" id="explain"></div>
+    </div>
+
+    <div class="card poloCard">
+      <div class="poloTitle">Water Polo Pool</div>
+      <div class="poloStage">
+        <svg class="poloSvg" viewBox="0 0 560 310" aria-label="water polo scene">
+          <rect x="0" y="0" width="560" height="310" fill="#dff4ff"/>
+          <rect x="35" y="120" width="490" height="150" rx="26" fill="#67c5ee" stroke="#2f9bd5" stroke-width="5"/>
+          <path d="M45 150 Q80 140 115 150 T185 150 T255 150 T325 150 T395 150 T465 150 T515 150"
+                fill="none" stroke="#b7ebff" stroke-width="4" opacity=".9"/>
+          <path d="M45 205 Q80 195 115 205 T185 205 T255 205 T325 205 T395 205 T465 205 T515 205"
+                fill="none" stroke="#b7ebff" stroke-width="4" opacity=".8"/>
+
+          <!-- goals -->
+          <g id="leftGoal">
+            <rect x="24" y="116" width="54" height="66" rx="4" fill="none" stroke="#fff" stroke-width="6"/>
+            <line x1="35" y1="126" x2="35" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="49" y1="126" x2="49" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="63" y1="126" x2="63" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="24" y1="130" x2="78" y2="130" stroke="#fff" stroke-width="2"/>
+            <line x1="24" y1="146" x2="78" y2="146" stroke="#fff" stroke-width="2"/>
+            <line x1="24" y1="162" x2="78" y2="162" stroke="#fff" stroke-width="2"/>
+          </g>
+          <g id="rightGoal">
+            <rect x="482" y="116" width="54" height="66" rx="4" fill="none" stroke="#fff" stroke-width="6"/>
+            <line x1="493" y1="126" x2="493" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="507" y1="126" x2="507" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="521" y1="126" x2="521" y2="176" stroke="#fff" stroke-width="2"/>
+            <line x1="482" y1="130" x2="536" y2="130" stroke="#fff" stroke-width="2"/>
+            <line x1="482" y1="146" x2="536" y2="146" stroke="#fff" stroke-width="2"/>
+            <line x1="482" y1="162" x2="536" y2="162" stroke="#fff" stroke-width="2"/>
+          </g>
+
+          <!-- labels -->
+          <text x="62" y="40" font-size="22" font-weight="900" fill="#13598e">Player 1</text>
+          <text x="430" y="40" font-size="22" font-weight="900" fill="#b9413d">Player 2</text>
+          <text x="62" y="66" font-size="20" font-weight="900" fill="#13598e">Score:</text>
+          <text x="430" y="66" font-size="20" font-weight="900" fill="#b9413d">Score:</text>
+          <text id="poolScore1" x="132" y="66" font-size="26" font-weight="900" fill="#13598e">0</text>
+          <text id="poolScore2" x="500" y="66" font-size="26" font-weight="900" fill="#b9413d">0</text>
+
+          <!-- players -->
+          <g id="p1" transform="translate(118 174)">
+            <circle cx="0" cy="-58" r="18" fill="#f3bf94" stroke="#20364b" stroke-width="2.5"/>
+            <path d="M-7 -66 Q0 -74 9 -66" fill="#2a4156"/>
+            <ellipse cx="0" cy="-16" rx="27" ry="31" fill="#438fe8" stroke="#20364b" stroke-width="3"/>
+            <line x1="-27" y1="-15" x2="-48" y2="-2" stroke="#f3bf94" stroke-width="10" stroke-linecap="round"/>
+            <line x1="27" y1="-15" x2="50" y2="-2" stroke="#f3bf94" stroke-width="10" stroke-linecap="round"/>
+            <line x1="-10" y1="14" x2="-18" y2="42" stroke="#20364b" stroke-width="8" stroke-linecap="round"/>
+            <line x1="10" y1="14" x2="18" y2="42" stroke="#20364b" stroke-width="8" stroke-linecap="round"/>
+          </g>
+
+          <g id="p2" transform="translate(442 174)">
+            <circle cx="0" cy="-58" r="18" fill="#f3bf94" stroke="#20364b" stroke-width="2.5"/>
+            <path d="M-7 -66 Q0 -74 9 -66" fill="#2a4156"/>
+            <ellipse cx="0" cy="-16" rx="27" ry="31" fill="#e85b57" stroke="#20364b" stroke-width="3"/>
+            <line x1="-27" y1="-15" x2="-50" y2="-2" stroke="#f3bf94" stroke-width="10" stroke-linecap="round"/>
+            <line x1="27" y1="-15" x2="48" y2="-2" stroke="#f3bf94" stroke-width="10" stroke-linecap="round"/>
+            <line x1="-10" y1="14" x2="-18" y2="42" stroke="#20364b" stroke-width="8" stroke-linecap="round"/>
+            <line x1="10" y1="14" x2="18" y2="42" stroke="#20364b" stroke-width="8" stroke-linecap="round"/>
+          </g>
+
+          <!-- balls -->
+          <g id="ball1" transform="translate(158 144)">
+            <circle cx="0" cy="0" r="10" fill="#ffd05b" stroke="#d39a17" stroke-width="3"/>
+            <path d="M-7 0 H7 M0 -7 V7" stroke="#d39a17" stroke-width="2"/>
+          </g>
+          <g id="ball2" transform="translate(402 144)">
+            <circle cx="0" cy="0" r="10" fill="#ffd05b" stroke="#d39a17" stroke-width="3"/>
+            <path d="M-7 0 H7 M0 -7 V7" stroke="#d39a17" stroke-width="2"/>
+          </g>
+
+          <!-- splashes -->
+          <g id="splash1" opacity="0">
+            <circle cx="0" cy="0" r="6" fill="#fff"/>
+            <circle cx="15" cy="-9" r="4" fill="#fff"/>
+            <circle cx="27" cy="1" r="5" fill="#fff"/>
+            <circle cx="12" cy="12" r="4" fill="#fff"/>
+          </g>
+          <g id="splash2" opacity="0">
+            <circle cx="0" cy="0" r="6" fill="#fff"/>
+            <circle cx="15" cy="-9" r="4" fill="#fff"/>
+            <circle cx="27" cy="1" r="5" fill="#fff"/>
+            <circle cx="12" cy="12" r="4" fill="#fff"/>
+          </g>
+        </svg>
+      </div>
+      <div class="poloNote" id="poloNote">Ready for the match!</div>
+    </div>
+  </div>
+</section>
+
+<section id="results" class="screen">
+  <div class="card results">
+    <div class="trophy">🏆</div>
+    <h2 id="resultTitle">Great Work!</h2>
+    <p id="resultText"></p>
+    <button class="bigbtn" onclick="restart()">Play Again</button>
+    <button class="bigbtn gold" onclick="goHome()">Choose Mode</button>
+  </div>
+</section>
+</main>
+</div>
+
+<script>
+const TOTAL=12;
+let mode=1;
+let difficulty="easy";
+let round=0;
+let currentPlayer=0;
+let scores=[0,0];
+let questions=[];
+let answered=false;
+let soundOn=true;
+let audioCtx=null;
+
+function show(id){
+  document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function shuffle(a){return [...a].sort(()=>Math.random()-.5)}
+function difficultyLabel(){return difficulty==="easy"?"Easy":"Intermediate"}
+function updateDifficultyUI(){
+  ["easy","intermediate"].forEach(level=>{
+    document.getElementById("diff"+level.charAt(0).toUpperCase()+level.slice(1)).classList.toggle("active", difficulty===level);
+  });
+  const dd=document.getElementById("difficultyDisplay");
+  if(dd) dd.textContent="★ "+difficultyLabel();
+  const lb=document.getElementById("levelBadge");
+  if(lb) lb.textContent=difficultyLabel();
+}
+function setDifficulty(level){
+  difficulty = level==="intermediate" ? "intermediate" : "easy";
+  updateDifficultyUI();
+}
+function goHome(){show("home")}
+function startGame(m){mode=m;restart()}
+function restart(){
+  round=0;
+  currentPlayer=0;
+  scores=[0,0];
+  questions=buildQuestions();
+  updateDifficultyUI();
+  document.getElementById("score2").style.visibility=mode===2?"visible":"hidden";
+  show("game");
+  renderQuestion();
+}
+
+// sound
+function initAudio(){
+  if(audioCtx) return;
+  const Ctx=window.AudioContext||window.webkitAudioContext;
+  if(Ctx) audioCtx=new Ctx();
+}
+function tone(freq,dur=.1,type="triangle",vol=.04,delay=0){
+  if(!soundOn) return;
+  initAudio(); if(!audioCtx) return;
+  const t=audioCtx.currentTime+delay;
+  const o=audioCtx.createOscillator();
+  const g=audioCtx.createGain();
+  o.type=type; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(.0001,t);
+  g.gain.exponentialRampToValueAtTime(vol,t+.01);
+  g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(t); o.stop(t+dur+.03);
+}
+function correctSound(){tone(660,.08);tone(880,.12,"triangle",.045,.09)}
+function wrongSound(){tone(220,.12,"sawtooth",.045);tone(170,.18,"sawtooth",.035,.11)}
+function goalSound(){tone(460,.08,"square",.03);tone(620,.08,"square",.03,.08);tone(820,.12,"triangle",.04,.16)}
+function toggleSound(){
+  soundOn=!soundOn;
+  document.getElementById("soundBtn").textContent=soundOn?"🔊 Sound On":"🔇 Sound Off";
+}
+
+// question generation
+function buildQuestions(){
+  const qs=[];
+  for(let i=0;i<TOTAL;i++){
+    const type = (i%2===0) ? "total" : "capacity";
+    qs.push(makeQuestion(type));
+  }
+  return shuffle(qs);
+}
+function getVolumePool(cap){
+  // Keep readings familiar and directly readable.
+  // 1000 ml beaker: labelled 100 ml intervals.
+  // 500 ml beaker: labelled 100 ml intervals.
+  // 100 ml beaker: labelled 10 ml intervals.
+  if(cap===1000) return [500,600,700,800,900,1000];
+  if(cap===500) return [100,200,300,400,500];
+  return [10,20,30,40,50,60,70,80,90,100];
+}
+
+function getConfig(){
+  if(difficulty==="easy"){
+    return {
+      helper:"Read each beaker, then add the two volumes mentally. Remember: 1000 ml = 1 l."
+    };
+  }
+  return {
+    helper:"Read each beaker, then add the 3 volumes. Remember: 1000 ml = 1 l."
+  };
+}
+
+function makeQuestion(type){
+  const cfg=getConfig();
+
+  let patterns;
+  if(difficulty==="easy"){
+    // Two clear readings; totals chosen to be easy mental calculations.
+    patterns=[
+      [1000,500],
+      [1000,100],
+      [500,100]
+    ];
+  }else{
+    // Three beakers, still straightforward.
+    patterns=[
+      [1000,500,100],
+      [1000,500,500],
+      [1000,100,100],
+      [500,500,100]
+    ];
+  }
+
+  const capacities=pick(patterns);
+
+  // Use easy-to-add values. For 100 ml beakers, favour tens;
+  // for larger beakers, favour hundreds.
+  const beakers=capacities.map(cap=>{
+    let pool=getVolumePool(cap);
+
+    if(difficulty==="easy"){
+      if(cap===1000) pool=[500,600,700,800,900,1000];
+      if(cap===500) pool=[100,200,300,400,500];
+      if(cap===100) pool=[20,30,40,50,60,70,80,90,100];
+    }
+
+    return {cap, amount:pick(pool)};
+  });
+
+  const totalMl=beakers.reduce((s,b)=>s+b.amount,0);
+  const containerType=pick(["bottle","can","soap","fishbowl","bucket"]);
+
+  const prompt=type==="total"
+    ? "Find the total volume of water in the beakers."
+    : "Find the capacity of the container.";
+
+  return {
+    kind:type,
+    badge:type==="total"?"Total volume":"Capacity",
+    prompt,
+    helper:cfg.helper,
+    beakers,
+    totalMl,
+    containerType,
+    explain:buildExplain(beakers,totalMl,type)
+  };
+}
+
+function buildExplain(beakers,totalMl,type){
+  const parts = beakers.map(b=>`${b.amount} ml`).join(" + ");
+  const l = Math.floor(totalMl/1000);
+  const ml = totalMl%1000;
+  return `${parts} = ${totalMl} ml = ${l} l ${ml} ml.`;
+}
+function mlToLMl(n){return {l:Math.floor(n/1000), ml:n%1000};}
+
+// render question scene
+function containerIcon(kind){
+  const label = {
+    bottle:"Bottle", can:"Can", soap:"Soap bottle", fishbowl:"Fish bowl", bucket:"Bucket"
+  }[kind] || "Container";
+  const art = {
+    bottle:`<svg viewBox="0 0 90 120" width="90" height="120"><rect x="32" y="10" width="26" height="16" rx="4" fill="#dce3ea"/><rect x="24" y="24" width="42" height="78" rx="10" fill="#f3f5f7" stroke="#9aa6b2" stroke-width="3"/><rect x="20" y="18" width="50" height="10" rx="3" fill="#c8d1d8"/><rect x="31" y="42" width="28" height="32" rx="4" fill="#d7eef8"/></svg>`,
+    can:`<svg viewBox="0 0 90 120" width="90" height="120"><rect x="22" y="15" width="46" height="90" rx="10" fill="#eceff2" stroke="#9ca6ae" stroke-width="3"/><ellipse cx="45" cy="15" rx="23" ry="6" fill="#d6dde3"/><ellipse cx="45" cy="105" rx="23" ry="6" fill="#d6dde3"/><rect x="33" y="32" width="24" height="48" fill="#d7eef8"/></svg>`,
+    soap:`<svg viewBox="0 0 90 120" width="90" height="120"><rect x="28" y="12" width="22" height="16" rx="4" fill="#d0d7dd"/><path d="M50 20 Q70 18 76 28" fill="none" stroke="#8d98a3" stroke-width="4"/><rect x="20" y="28" width="44" height="74" rx="12" fill="#f1f4f6" stroke="#9aa6b2" stroke-width="3"/><path d="M24 90 Q40 76 56 48" fill="none" stroke="#d8dfe5" stroke-width="8"/></svg>`,
+    fishbowl:`<svg viewBox="0 0 90 120" width="90" height="120"><path d="M18 34 Q18 22 45 22 Q72 22 72 34 L72 78 Q72 94 45 94 Q18 94 18 78 Z" fill="#f5f8fa" stroke="#9aa6b2" stroke-width="3"/><path d="M20 52 Q45 50 70 52" stroke="#a9d8f0" stroke-width="4"/><circle cx="45" cy="62" r="8" fill="#f7b04f"/><circle cx="48" cy="60" r="1.6" fill="#222"/></svg>`,
+    bucket:`<svg viewBox="0 0 90 120" width="90" height="120"><rect x="22" y="28" width="46" height="62" rx="4" fill="#eef2f5" stroke="#9aa6b2" stroke-width="3"/><path d="M28 28 Q45 12 62 28" fill="none" stroke="#9aa6b2" stroke-width="4"/><rect x="29" y="46" width="32" height="26" fill="#d7eef8"/></svg>`
+  }[kind];
+  return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:112px">
+    <div style="font-weight:900;color:#0c5c92;font-size:16px">${label}</div>
+    ${art}
+  </div>`;
+}
+function beakerSVG(cap, amount){
+  // Wider beaker drawings so the unit "ml" is fully visible.
+  const dims = cap===1000 ? {w:172,h:175} : cap===500 ? {w:158,h:155} : {w:136,h:135};
+  const vw = dims.w, vh = dims.h;
+  const left=12, top=10, innerW=vw-30, innerH=vh-20;
+
+  const fillH = (amount/cap)*(innerH-20);
+  const fillY = top + innerH - fillH;
+
+  // Move the scale slightly left so labels fit clearly inside the SVG.
+  const scaleX = cap===1000 ? vw-70 : cap===500 ? vw-62 : vw-52;
+
+  let ticks="", labels="";
+  let stepMajor, stepMinor;
+  if(cap===1000){stepMajor=100; stepMinor=50}
+  else if(cap===500){stepMajor=100; stepMinor=50}
+  else {stepMajor=10; stepMinor=5}
+
+  for(let m=stepMinor; m<=cap; m+=stepMinor){
+    const y = top + innerH - (m/cap)*(innerH-20);
+    const major = m%stepMajor===0;
+    const len = major ? 18 : 10;
+    const col = major ? "#222" : "#666";
+
+    ticks += `<line x1="${scaleX-len}" y1="${y}" x2="${scaleX}" y2="${y}" stroke="${col}" stroke-width="${major?2.4:1.2}"/>`;
+
+    if(major){
+      const fz = cap===100 ? 12 : 13;
+      labels += `<text x="${scaleX+4}" y="${y+5}" font-size="${fz}" font-weight="900" fill="#111">${m}<tspan dx="3">ml</tspan></text>`;
+    }
+  }
+
+  return `<svg viewBox="0 0 ${vw} ${vh}" style="width:${vw}px;height:${vh}px">
+    <path d="M${left} ${top+8} L${vw-14} ${top+8} L${vw-18} ${top+24} L${vw-18} ${vh-12}
+             Q${vw-18} ${vh-2} ${vw-28} ${vh-2} L${left+10} ${vh-2}
+             Q${left} ${vh-2} ${left} ${vh-12} L${left} ${top+24} Z"
+          fill="#f9fbfd" stroke="#7e90a3" stroke-width="3"/>
+    <rect x="${left+2}" y="${fillY}" width="${vw-34}" height="${fillH}" fill="#93bee0" opacity=".95"/>
+    <line x1="${left+2}" y1="${fillY}" x2="${vw-18}" y2="${fillY}" stroke="#7baed5" stroke-width="3"/>
+    ${ticks}${labels}
+  </svg>`;
+}
+
+function renderScene(q){
+  const total = mlToLMl(q.totalMl);
+  const beakerHTML = q.beakers.map(b=>`<div style="display:flex;align-items:flex-end">${beakerSVG(b.cap,b.amount)}</div>`).join("");
+  const answerPreview = `<div style="display:flex;gap:10px;align-items:center;justify-content:center;margin-top:8px;font-size:22px;font-weight:900;color:#0c5c92">
+      <span style="padding:8px 16px;border:3px solid #0e75bd;border-radius:16px;min-width:90px;text-align:center;background:#fff">${total.l}</span> l
+      <span style="padding:8px 16px;border:3px solid #0e75bd;border-radius:16px;min-width:100px;text-align:center;background:#fff">${total.ml}</span> ml
+    </div>`;
+
+  if(q.kind==="total"){
+    return `<div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-weight:900;color:#0c5c92;font-size:18px">Set of beakers</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:8px">${beakerHTML}</div>
+    </div>`;
+  }
+  return `<div style="width:100%;display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center">
+    ${containerIcon(q.containerType)}
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+      <div style="font-weight:900;color:#0c5c92;font-size:18px">Beakers used to fill the container</div>
+      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:8px">${beakerHTML}</div>
+    </div>
+  </div>`;
+}
+
+// water polo animation
+function resetPolo(){
+  const b1=document.getElementById("ball1"), b2=document.getElementById("ball2");
+  b1.getAnimations().forEach(a=>a.cancel());
+  b2.getAnimations().forEach(a=>a.cancel());
+  document.getElementById("splash1").getAnimations().forEach(a=>a.cancel());
+  document.getElementById("splash2").getAnimations().forEach(a=>a.cancel());
+  b1.setAttribute("transform","translate(158 144)");
+  b2.setAttribute("transform","translate(402 144)");
+  document.getElementById("splash1").setAttribute("opacity","0");
+  document.getElementById("splash2").setAttribute("opacity","0");
+  document.getElementById("poolScore1").textContent=scores[0];
+  document.getElementById("poolScore2").textContent=scores[1];
+  document.getElementById("poloNote").textContent="Ready for the match!";
+}
+function scoreGoal(player){
+  goalSound();
+  const ball=document.getElementById(player===0?"ball1":"ball2");
+  if(player===0){
+    ball.animate([
+      {transform:"translate(158px,144px)"},
+      {transform:"translate(250px,85px)", offset:.45},
+      {transform:"translate(500px,146px)"}
+    ], {duration:800,easing:"ease-in-out",fill:"forwards"});
+    document.getElementById("poloNote").textContent="🥅 Goal for Player 1!";
+  }else{
+    ball.animate([
+      {transform:"translate(402px,144px)"},
+      {transform:"translate(310px,85px)", offset:.45},
+      {transform:"translate(50px,146px)"}
+    ], {duration:800,easing:"ease-in-out",fill:"forwards"});
+    document.getElementById("poloNote").textContent="🥅 Goal for Player 2!";
+  }
+}
+function splashMiss(player){
+  wrongSound();
+  const ball=document.getElementById(player===0?"ball1":"ball2");
+  const splash=document.getElementById(player===0?"splash1":"splash2");
+  const endX = player===0?280:280;
+  const start = player===0?"translate(158px,144px)":"translate(402px,144px)";
+  ball.animate([
+    {transform:start},
+    {transform:`translate(${endX}px,122px)`, offset:.45},
+    {transform:`translate(${endX}px,206px)`, opacity:0}
+  ], {duration:700,easing:"ease-in",fill:"forwards"});
+  splash.setAttribute("transform",`translate(${endX} 214)`);
+  splash.animate([{opacity:0},{opacity:1, offset:.68},{opacity:0}],{duration:700,easing:"ease-out",fill:"forwards"});
+  document.getElementById("poloNote").textContent=player===0?"💦 Splash! Player 1 missed.":"💦 Splash! Player 2 missed.";
+}
+
+// game rendering
+function renderQuestion(){
+  answered=false;
+  const q=questions[round];
+  document.getElementById("round").textContent=`${round+1} / ${TOTAL}`;
+  document.getElementById("bar").style.width=`${(round/TOTAL)*100}%`;
+  document.getElementById("score1").textContent=`Player 1: ${scores[0]}`;
+  document.getElementById("score2").textContent=`Player 2: ${scores[1]}`;
+  document.getElementById("typeBadge").textContent=q.badge;
+  document.getElementById("question").textContent=q.prompt;
+  document.getElementById("helperText").textContent=q.helper || "Think carefully and add all the beakers.";
+  document.getElementById("helperText").style.visibility="visible";
+  document.getElementById("scene").innerHTML=renderScene(q);
+  document.getElementById("feedback").textContent="";
+  document.getElementById("explain").textContent="";
+
+  document.getElementById("litreInput").value="";
+  document.getElementById("mlInput").value="";
+  document.getElementById("litreInput").disabled=false;
+  document.getElementById("mlInput").disabled=false;
+  document.getElementById("litreInput").className="answerInput";
+  document.getElementById("mlInput").className="answerInput";
+
+  document.getElementById("checkBtn").disabled=false;
+  document.getElementById("nextBtn").classList.add("hidden");
+
+  const turn=document.getElementById("turnBanner");
+  if(mode===2){
+    turn.textContent=currentPlayer===0?"🔵 Player 1's Turn":"🔴 Player 2's Turn";
+    turn.className="badge turn "+(currentPlayer===0?"p1":"p2");
+  }else{
+    turn.textContent="👤 Your Turn";
+    turn.className="badge turn p1";
+  }
+
+  resetPolo();
+}
+function checkAnswer(){
+  if(answered) return;
+  const q=questions[round];
+  const lRaw=document.getElementById("litreInput").value.trim();
+  const mlRaw=document.getElementById("mlInput").value.trim();
+  if(lRaw==="" && mlRaw===""){
+    const fb=document.getElementById("feedback");
+    fb.textContent="⚠️ Fill in the blanks first.";
+    fb.style.color="#b36f14";
+    return;
+  }
+  answered=true;
+  const l = lRaw==="" ? 0 : Number(lRaw);
+  const ml = mlRaw==="" ? 0 : Number(mlRaw);
+  const correct = mlToLMl(q.totalMl);
+  const ok = !Number.isNaN(l) && !Number.isNaN(ml) && l===correct.l && ml===correct.ml;
+  const p = mode===2 ? currentPlayer : 0;
+
+  document.getElementById("checkBtn").disabled=true;
+  document.getElementById("litreInput").disabled=true;
+  document.getElementById("mlInput").disabled=true;
+
+  const fb=document.getElementById("feedback");
+  const ex=document.getElementById("explain");
+
+  if(ok){
+    correctSound();
+    scores[p]++;
+    document.getElementById("litreInput").classList.add("correct");
+    document.getElementById("mlInput").classList.add("correct");
+    fb.textContent="✅ Correct!";
+    fb.style.color="#14884b";
+    ex.textContent=q.explain;
+    scoreGoal(p);
+  }else{
+    document.getElementById("litreInput").classList.add("wrong");
+    document.getElementById("mlInput").classList.add("wrong");
+    fb.textContent="❌ Not quite.";
+    fb.style.color="#b43b3b";
+    ex.textContent=`${q.explain} The correct answer is ${correct.l} l ${correct.ml} ml.`;
+    splashMiss(p);
+  }
+
+  document.getElementById("score1").textContent=`Player 1: ${scores[0]}`;
+  document.getElementById("score2").textContent=`Player 2: ${scores[1]}`;
+  document.getElementById("poolScore1").textContent=scores[0];
+  document.getElementById("poolScore2").textContent=scores[1];
+  document.getElementById("nextBtn").classList.remove("hidden");
+}
+function nextQuestion(){
+  round++;
+  if(round>=TOTAL){finish();return}
+  if(mode===2) currentPlayer=currentPlayer===0?1:0;
+  renderQuestion();
+}
+function finish(){
+  document.getElementById("bar").style.width="100%";
+  show("results");
+  if(mode===1){
+    const s=scores[0];
+    document.getElementById("resultTitle").textContent=s>=10?"Water Polo Capacity Champion!":s>=7?"Great Match!":"Keep Practising!";
+    document.getElementById("resultText").innerHTML=
+      `You answered <b>${s} out of ${TOTAL}</b> questions correctly at <b>${difficultyLabel()}</b> level.<br>`+
+      (s>=10?"Excellent work adding and converting volumes!":s>=7?"Good job. You are getting confident with l and ml.":"Try again and keep using 1000 ml = 1 l.");
+  }else{
+    const a=scores[0], b=scores[1];
+    document.getElementById("resultTitle").textContent=a===b?"It's a Draw!":`Player ${a>b?1:2} Wins!`;
+    document.getElementById("resultText").innerHTML=
+      `Difficulty: <b>${difficultyLabel()}</b><br>Player 1: <b>${a}</b><br>Player 2: <b>${b}</b><br><br>Players took turns finding total volume and capacity.`;
+  }
+}
+document.addEventListener("keydown",e=>{
+  if(!document.getElementById("game").classList.contains("active")) return;
+  if(e.key==="Enter"){
+    e.preventDefault();
+    if(answered) nextQuestion(); else checkAnswer();
+  }
+});
+
+// preview art
+document.getElementById("previewArt").innerHTML = `
+<svg viewBox="0 0 560 220" style="width:100%;height:100%">
+  <rect x="28" y="106" width="504" height="90" rx="24" fill="#67c5ee" stroke="#2f9bd5" stroke-width="5"/>
+  <path d="M40 130 Q70 122 100 130 T160 130 T220 130 T280 130 T340 130 T400 130 T460 130 T520 130"
+        fill="none" stroke="#b7ebff" stroke-width="4"/>
+  <rect x="468" y="90" width="44" height="55" rx="4" fill="none" stroke="#fff" stroke-width="6"/>
+  <g transform="translate(126 162)">
+    <circle cx="0" cy="-55" r="18" fill="#f3bf94" stroke="#20364b" stroke-width="2.5"/>
+    <ellipse cx="0" cy="-15" rx="26" ry="30" fill="#438fe8" stroke="#20364b" stroke-width="3"/>
+  </g>
+  <g transform="translate(170 122)">
+    <circle cx="0" cy="0" r="11" fill="#ffd05b" stroke="#d39a17" stroke-width="3"/>
+  </g>
+  <g transform="translate(310 34)">
+    <text x="0" y="0" font-size="25" font-weight="900" fill="#0c5c92">Correct answer → Goal!</text>
+    <text x="0" y="30" font-size="22" font-weight="900" fill="#0c5c92">Answer in l and ml</text>
+  </g>
+</svg>`;
+
+updateDifficultyUI();
+</script>
+</body>
+</html>
