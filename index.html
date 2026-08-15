@@ -673,14 +673,25 @@ function renderScene(q){
 // water polo animation
 function resetPolo(){
   const b1=document.getElementById("ball1"), b2=document.getElementById("ball2");
-  b1.getAnimations().forEach(a=>a.cancel());
-  b2.getAnimations().forEach(a=>a.cancel());
-  document.getElementById("splash1").getAnimations().forEach(a=>a.cancel());
-  document.getElementById("splash2").getAnimations().forEach(a=>a.cancel());
+  const s1=document.getElementById("splash1"), s2=document.getElementById("splash2");
+  [b1,b2,s1,s2].forEach(el=>el.getAnimations().forEach(a=>a.cancel()));
+
+  // A missed-shot animation ends at opacity 0 with fill:"forwards".
+  // Restore both balls explicitly so neither can remain invisible next turn.
+  b1.style.opacity="1";
+  b2.style.opacity="1";
+  b1.setAttribute("opacity","1");
+  b2.setAttribute("opacity","1");
+  b1.style.transform="";
+  b2.style.transform="";
   b1.setAttribute("transform","translate(158 144)");
   b2.setAttribute("transform","translate(402 144)");
-  document.getElementById("splash1").setAttribute("opacity","0");
-  document.getElementById("splash2").setAttribute("opacity","0");
+
+  s1.style.opacity="0";
+  s2.style.opacity="0";
+  s1.setAttribute("opacity","0");
+  s2.setAttribute("opacity","0");
+
   document.getElementById("poolScore1").textContent=scores[0];
   document.getElementById("poolScore2").textContent=scores[1];
   document.getElementById("poloNote").textContent="Ready for the match!";
@@ -688,6 +699,8 @@ function resetPolo(){
 function scoreGoal(player){
   goalSound();
   const ball=document.getElementById(player===0?"ball1":"ball2");
+  ball.style.opacity="1";
+  ball.setAttribute("opacity","1");
   if(player===0){
     ball.animate([
       {transform:"translate(158px,144px)"},
@@ -707,6 +720,8 @@ function scoreGoal(player){
 function splashMiss(player){
   wrongSound();
   const ball=document.getElementById(player===0?"ball1":"ball2");
+  ball.style.opacity="1";
+  ball.setAttribute("opacity","1");
   const splash=document.getElementById(player===0?"splash1":"splash2");
   const endX = player===0?280:280;
   const start = player===0?"translate(158px,144px)":"translate(402px,144px)";
