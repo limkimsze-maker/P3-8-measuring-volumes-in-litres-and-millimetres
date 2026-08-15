@@ -177,13 +177,26 @@ main{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column}
   .feedback{font-size:16px}
   .explain{font-size:12px}
 }
+
+.sfBackToHub{display:inline-flex;align-items:center;justify-content:center;color:#075b93;background:#fff;text-decoration:none;font-weight:900;border-radius:999px;padding:7px 12px;box-shadow:0 2px 7px #0002;white-space:nowrap;font-size:14px;flex:0 0 auto}
+.sfBackToHub:hover{background:#eef9ff}
+header .headerTitle{min-width:0;flex:1}
+.measureWrap{overflow:hidden}
+.beakerSvg{max-width:100%;height:auto}
+.capacityScene{width:100%;display:grid;grid-template-columns:120px minmax(0,1fr);gap:12px;align-items:center}
+.beakerSet{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:8px}
+.containerArt{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:112px}
+@media(max-width:700px){.sfBackToHub{font-size:11px;padding:6px 8px}header .sub{display:none}.beakerSet{flex-wrap:nowrap;gap:3px}.beakerSvg{width:104px!important;height:auto!important}.capacityScene{grid-template-columns:78px minmax(0,1fr);gap:3px}.containerArt{min-width:72px!important}.containerArt svg{width:62px!important;height:auto!important}.containerArt>div:first-child{font-size:11px!important}}
+@media(max-width:430px){.beakerSvg{width:92px!important}.capacityScene{grid-template-columns:64px minmax(0,1fr)}.containerArt{min-width:58px!important}.containerArt svg{width:52px!important}}
+
 </style>
 <script src="https://cdn.counter.dev/script.js" data-id="825e93b6-ce99-40ef-8bcc-125f13297433" data-utcoffset="8"></script>
 </head>
 <body>
 <div class="app">
 <header>
-  <h1>🤽 Water Polo Capacity Challenge</h1>
+  <a class="sfBackToHub" href="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/" aria-label="Back to Sports Fiesta Practice Hub" title="Back to Sports Fiesta Practice Hub">← Fiesta Hub</a>
+  <div class="headerTitle"><h1>🤽 Water Polo Capacity Challenge</h1></div>
   <div class="sub">Total volume and capacity • l and ml<br>1 Player or 2 Players • 2 Levels</div>
 </header>
 
@@ -242,7 +255,7 @@ main{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column}
 
   <div class="statusline">
     <div class="score p1" id="score1">Player 1: 0</div>
-    <div class="round" id="round">1 / 12</div>
+    <div class="round" id="round">1 / 10</div>
     <div class="score p2" id="score2">Player 2: 0</div>
   </div>
   <div class="progress"><div id="bar"></div></div>
@@ -314,9 +327,9 @@ main{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column}
 
           <!-- labels -->
           <text x="62" y="40" font-size="22" font-weight="900" fill="#13598e">Player 1</text>
-          <text x="430" y="40" font-size="22" font-weight="900" fill="#b9413d">Player 2</text>
+          <text id="poolP2Label" x="430" y="40" font-size="22" font-weight="900" fill="#b9413d">Player 2</text>
           <text x="62" y="66" font-size="20" font-weight="900" fill="#13598e">Score:</text>
-          <text x="430" y="66" font-size="20" font-weight="900" fill="#b9413d">Score:</text>
+          <text id="poolP2ScoreLabel" x="430" y="66" font-size="20" font-weight="900" fill="#b9413d">Score:</text>
           <text id="poolScore1" x="132" y="66" font-size="26" font-weight="900" fill="#13598e">0</text>
           <text id="poolScore2" x="500" y="66" font-size="26" font-weight="900" fill="#b9413d">0</text>
 
@@ -384,7 +397,7 @@ main{flex:1;min-height:0;padding:10px;display:flex;flex-direction:column}
 </div>
 
 <script>
-const TOTAL=12;
+let TOTAL=10;
 let mode=1;
 let difficulty="easy";
 let round=0;
@@ -394,6 +407,16 @@ let questions=[];
 let answered=false;
 let soundOn=true;
 let audioCtx=null;
+const HUB_KEY="sportsFiestaHubProgress_v1";
+function saveHubProgress(){
+  try{
+    const data=JSON.parse(localStorage.getItem(HUB_KEY)||"{}")||{};
+    const old=data[8]||{};
+    const winner=mode===2?(scores[0]===scores[1]?0:(scores[0]>scores[1]?1:2)):0;
+    data[8]={...old,completed:true,pieceEarned:!!old.pieceEarned||mode===1,perfectSingle:!!old.perfectSingle||(mode===1&&scores[0]===TOTAL),verified:true,source:"game-v5",updatedAt:new Date().toISOString(),lastMode:mode,lastWinner:winner,lastDifficulty:difficulty};
+    localStorage.setItem(HUB_KEY,JSON.stringify(data));
+  }catch(e){console.warn("Practice 8 progress could not be saved",e);}
+}
 
 function show(id){
   document.querySelectorAll(".screen").forEach(x=>x.classList.remove("active"));
@@ -416,14 +439,26 @@ function setDifficulty(level){
   updateDifficultyUI();
 }
 function goHome(){show("home")}
-function startGame(m){mode=m;restart()}
+function startGame(m){
+  mode=Number(m)===2?2:1;
+  TOTAL=mode===2?12:10;
+  initAudio();
+  if(audioCtx&&audioCtx.state==="suspended") audioCtx.resume();
+  restart();
+}
 function restart(){
   round=0;
   currentPlayer=0;
   scores=[0,0];
   questions=buildQuestions();
   updateDifficultyUI();
-  document.getElementById("score2").style.visibility=mode===2?"visible":"hidden";
+  const showP2=mode===2;
+  document.getElementById("score2").style.visibility=showP2?"visible":"hidden";
+  document.getElementById("poolP2Label").style.visibility=showP2?"visible":"hidden";
+  document.getElementById("poolP2ScoreLabel").style.visibility=showP2?"visible":"hidden";
+  document.getElementById("poolScore2").style.visibility=showP2?"visible":"hidden";
+  document.getElementById("p2").style.visibility=showP2?"visible":"hidden";
+  document.getElementById("ball2").style.visibility=showP2?"visible":"hidden";
   show("game");
   renderQuestion();
 }
@@ -456,13 +491,27 @@ function toggleSound(){
 }
 
 // question generation
-function buildQuestions(){
-  const qs=[];
-  for(let i=0;i<TOTAL;i++){
-    const type = (i%2===0) ? "total" : "capacity";
-    qs.push(makeQuestion(type));
+function questionKey(q){
+  const readings=q.beakers.map(b=>`${b.cap}:${b.amount}`).sort().join("|");
+  return `${q.kind}|${readings}`;
+}
+function makeUniqueQuestions(type,count,seen){
+  const out=[];
+  let guard=0;
+  while(out.length<count && guard++<300){
+    const q=makeQuestion(type);
+    const key=questionKey(q);
+    if(seen.has(key)) continue;
+    seen.add(key);
+    out.push(q);
   }
-  return shuffle(qs);
+  if(out.length!==count) throw new Error("Could not generate enough unique Practice 8 questions.");
+  return out;
+}
+function buildQuestions(){
+  const seen=new Set();
+  const each=TOTAL/2;
+  return shuffle([...makeUniqueQuestions("total",each,seen),...makeUniqueQuestions("capacity",each,seen)]);
 }
 function getVolumePool(cap){
   // Keep readings familiar and directly readable.
@@ -561,7 +610,7 @@ function containerIcon(kind){
     fishbowl:`<svg viewBox="0 0 90 120" width="90" height="120"><path d="M18 34 Q18 22 45 22 Q72 22 72 34 L72 78 Q72 94 45 94 Q18 94 18 78 Z" fill="#f5f8fa" stroke="#9aa6b2" stroke-width="3"/><path d="M20 52 Q45 50 70 52" stroke="#a9d8f0" stroke-width="4"/><circle cx="45" cy="62" r="8" fill="#f7b04f"/><circle cx="48" cy="60" r="1.6" fill="#222"/></svg>`,
     bucket:`<svg viewBox="0 0 90 120" width="90" height="120"><rect x="22" y="28" width="46" height="62" rx="4" fill="#eef2f5" stroke="#9aa6b2" stroke-width="3"/><path d="M28 28 Q45 12 62 28" fill="none" stroke="#9aa6b2" stroke-width="4"/><rect x="29" y="46" width="32" height="26" fill="#d7eef8"/></svg>`
   }[kind];
-  return `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:112px">
+  return `<div class="containerArt">
     <div style="font-weight:900;color:#0c5c92;font-size:16px">${label}</div>
     ${art}
   </div>`;
@@ -585,7 +634,7 @@ function beakerSVG(cap, amount){
       labels+=`<text x="${right+5}" y="${y+4}" font-size="${fz}" font-weight="900" fill="#173b5e">${m}</text>`;
     }
   }
-  return `<svg viewBox="0 0 ${vw} ${vh}" style="width:${vw}px;height:${vh}px" aria-label="original ${cap} ml Sports Lab measuring cup">
+  return `<svg class="beakerSvg" viewBox="0 0 ${vw} ${vh}" style="width:${vw}px;height:${vh}px" aria-label="original ${cap} ml Sports Lab measuring cup">
     <defs><linearGradient id="cupFill${cap}${amount}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#7bd9ec"/><stop offset="1" stop-color="#40acd1"/></linearGradient></defs>
     <path d="M24 18 H${vw-30} L${vw-38} ${bottom} Q${vw-40} ${vh-10} ${vw-58} ${vh-10} H44 Q26 ${vh-10} 24 ${bottom} Z" fill="#f8fdff" stroke="#176ca5" stroke-width="4" stroke-linejoin="round"/>
     <path d="M20 18 H${vw-26}" stroke="#176ca5" stroke-width="8" stroke-linecap="round"/>
@@ -609,14 +658,14 @@ function renderScene(q){
   if(q.kind==="total"){
     return `<div style="width:100%;display:flex;flex-direction:column;align-items:center;gap:8px">
       <div style="font-weight:900;color:#0c5c92;font-size:18px">Set of beakers</div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:8px">${beakerHTML}</div>
+      <div class="beakerSet">${beakerHTML}</div>
     </div>`;
   }
-  return `<div style="width:100%;display:grid;grid-template-columns:120px 1fr;gap:12px;align-items:center">
+  return `<div class="capacityScene">
     ${containerIcon(q.containerType)}
     <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
       <div style="font-weight:900;color:#0c5c92;font-size:18px">Beakers used to fill the container</div>
-      <div style="display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:8px">${beakerHTML}</div>
+      <div class="beakerSet">${beakerHTML}</div>
     </div>
   </div>`;
 }
@@ -645,7 +694,7 @@ function scoreGoal(player){
       {transform:"translate(250px,85px)", offset:.45},
       {transform:"translate(500px,146px)"}
     ], {duration:800,easing:"ease-in-out",fill:"forwards"});
-    document.getElementById("poloNote").textContent="🥅 Goal for Player 1!";
+    document.getElementById("poloNote").textContent=mode===1?"🥅 Goal!":"🥅 Goal for Player 1!";
   }else{
     ball.animate([
       {transform:"translate(402px,144px)"},
@@ -668,7 +717,7 @@ function splashMiss(player){
   ], {duration:700,easing:"ease-in",fill:"forwards"});
   splash.setAttribute("transform",`translate(${endX} 214)`);
   splash.animate([{opacity:0},{opacity:1, offset:.68},{opacity:0}],{duration:700,easing:"ease-out",fill:"forwards"});
-  document.getElementById("poloNote").textContent=player===0?"💦 Splash! Player 1 missed.":"💦 Splash! Player 2 missed.";
+  document.getElementById("poloNote").textContent=mode===1?"💦 Splash! No goal.":(player===0?"💦 Splash! Player 1 missed.":"💦 Splash! Player 2 missed.");
 }
 
 // game rendering
@@ -695,7 +744,11 @@ function renderQuestion(){
   document.getElementById("mlInput").className="answerInput";
 
   document.getElementById("checkBtn").disabled=false;
-  document.getElementById("nextBtn").classList.add("hidden");
+  const nextBtn=document.getElementById("nextBtn");
+  nextBtn.disabled=false;
+  nextBtn.removeAttribute("disabled");
+  nextBtn.classList.add("hidden");
+  document.getElementById("litreInput").focus();
 
   const turn=document.getElementById("turnBanner");
   if(mode===2){
@@ -719,11 +772,17 @@ function checkAnswer(){
     fb.style.color="#b36f14";
     return;
   }
+  if((lRaw!=="" && !/^\d+$/.test(lRaw)) || (mlRaw!=="" && !/^\d+$/.test(mlRaw))){
+    const fb=document.getElementById("feedback");
+    fb.textContent="⚠️ Please use whole numbers only.";
+    fb.style.color="#b36f14";
+    return;
+  }
   answered=true;
   const l = lRaw==="" ? 0 : Number(lRaw);
   const ml = mlRaw==="" ? 0 : Number(mlRaw);
   const correct = mlToLMl(q.totalMl);
-  const ok = !Number.isNaN(l) && !Number.isNaN(ml) && l===correct.l && ml===correct.ml;
+  const ok = l===correct.l && ml===correct.ml;
   const p = mode===2 ? currentPlayer : 0;
 
   document.getElementById("checkBtn").disabled=true;
@@ -757,14 +816,21 @@ function checkAnswer(){
   document.getElementById("poolScore2").textContent=scores[1];
   document.getElementById("nextBtn").classList.remove("hidden");
 }
+let advancing=false;
 function nextQuestion(){
+  if(advancing || !answered) return;
+  advancing=true;
+  const nextBtn=document.getElementById("nextBtn");
+  nextBtn.disabled=true;
   round++;
-  if(round>=TOTAL){finish();return}
+  if(round>=TOTAL){finish();advancing=false;return}
   if(mode===2) currentPlayer=currentPlayer===0?1:0;
   renderQuestion();
+  advancing=false;
 }
 function finish(){
   document.getElementById("bar").style.width="100%";
+  saveHubProgress();
   show("results");
   if(mode===1){
     const s=scores[0];
@@ -809,11 +875,5 @@ document.getElementById("previewArt").innerHTML = `
 
 updateDifficultyUI();
 </script>
-<script src="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/sports-fiesta-original-questions-v1.js?v=20260810a" data-practice="8"></script>
-<script src="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/sports-fiesta-medal-hook-v4.js?v=20260811a" data-practice="8" data-sport="Water Polo"></script>
-<script src="mobile-beaker-fit-v1.js?v=20260810a"></script>
-<script src="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/sports-fiesta-random-questions-v1.js?v=20260812a" data-practice="8"></script>
-<script src="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/sports-fiesta-back-to-hub-v1.js?v=20260812a"></script>
-<script src="https://limkimsze-maker.github.io/P3-Length-Mass-and-Volume-Sports-Fiesta-/sports-fiesta-next-guard-v1.js?v=20260812a" data-practice="8"></script>
 </body>
 </html>
